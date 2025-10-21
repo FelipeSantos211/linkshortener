@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # ==============================================
+  # BANCO DE DADOS POSTGRESQL
+  # ==============================================
+  db:
+    image: postgres:16
+    container_name: linkshortener-db
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-linkshortener}
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-maneger}
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - linkshortener-network
+
+  # ==============================================
+  # APLICAÇÃO SPRING BOOT
+  # ==============================================
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: linkshortener-app
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      # Database
+      DATABASE_URL: jdbc:postgresql://db:5432/${DATABASE_NAME:-linkshortener}
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-maneger}
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-SUA_CHAVE_SECRETA_MUITO_GRANDE_E_SEGURA_AQUI_123456}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-1}
+      
+      # Application
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      SERVER_PORT: 8080
+      
+      # JPA
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL:-false}
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - linkshortener-network
+    restart: unless-stopped
+
+# ==============================================
+# VOLUMES
+# ==============================================
+volumes:
+  postgres_data:
+    driver: local
+
+# ==============================================
+# NETWORKS
+# ==============================================
+networks:
+  linkshortener-network:
+    driver: bridge
