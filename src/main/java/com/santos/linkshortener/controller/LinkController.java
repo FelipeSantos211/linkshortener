@@ -49,6 +49,15 @@ public class LinkController {
                 .toList();
     }
 
+    @DeleteMapping("/links/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteLink(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String authHeader) {
+        String username = extractUsernameFromToken(authHeader);
+        linkService.deleteLink(id, username);
+    }
+
     /**
      * Extrai o username do token JWT do header Authorization.
      * Espera o formato: "Bearer {token}"

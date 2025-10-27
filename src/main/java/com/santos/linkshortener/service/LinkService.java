@@ -59,8 +59,19 @@ public class LinkService {
             throw new RuntimeException("Link não encontrado");
         }
     }
-    public List<Link> getAllLinks() {
-        return linkRepository.findAll();
+    
+    /**
+     * Deleta um link específico associado a um usuário autenticado.
+     * @param id       ID do link a ser deletado
+     * @param username Username do usuário autenticado
+     */
+        public void deleteLink(Long id, String username) {
+        Link link = linkRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Link não encontrado com id: " + id));
+        if (!link.getUser().getUsername().equals(username)) {
+            throw new RuntimeException("Usuário nao autorizado para deletar o link");
+        }
+        linkRepository.delete(link);
     }
 
     /**
@@ -74,4 +85,5 @@ public class LinkService {
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + username));
         return linkRepository.findByUser(user);
     }
+
 }
