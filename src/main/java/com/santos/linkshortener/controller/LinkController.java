@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.List;
 
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 public class LinkController {
 
@@ -38,13 +39,6 @@ public class LinkController {
     public void redirectToOriginalUrl(@PathVariable String shortUrl, HttpServletResponse response) throws IOException {
         String originalUrl = linkService.getOriginalUrl(shortUrl);
         response.sendRedirect(originalUrl);
-    }
-
-    @GetMapping("/links")
-    public List<LinkResponse> getAllLinks() {
-        return linkService.getAllLinks().stream()
-                .map(link -> LinkResponse.from(link, baseUrl))
-                .toList();
     }
 
     @GetMapping("/my-links")
