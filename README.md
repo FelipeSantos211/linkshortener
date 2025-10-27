@@ -168,6 +168,19 @@ Resposta
 ]
 ```
 
+  Deletar link (apenas proprietário)
+
+  ```http
+  DELETE /links/{id}
+  Authorization: Bearer {seu_token}
+  ```
+
+  Comportamento
+
+  - Remove o link identificado por `id` se o usuário autenticado for o proprietário.
+  - Retorna HTTP 204 No Content em sucesso.
+  - Retorna erro (4xx/5xx) em caso de link não encontrado ou usuário não autorizado.
+
 Redirecionar (público)
 
 ```http
@@ -213,7 +226,11 @@ curl -X POST http://localhost:8080/links `
   -H "Content-Type: application/json" `
   -d '{"urlOriginal":"https://github.com","urlCurta":"gh"}'
 
-# 4) Acessar link curto
+# 4) Deletar link
+curl -X DELETE http://localhost:8080/links/1 `
+  -H "Authorization: Bearer $token"
+
+# 5) Acessar link curto
 curl -L http://localhost:8080/gh
 ```
 
@@ -260,7 +277,7 @@ docker build -t linkshortener:latest .
 
 ## 📝 Licença
 
-Projeto sob licença MIT (veja `LICENSE`).
+Projeto sob licença MIT.
 
 ## 👤 Autor
 
