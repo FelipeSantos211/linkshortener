@@ -2,12 +2,14 @@ package com.santos.linkshortener.service;
 
 import com.santos.linkshortener.util.LinkGeneratorUtil;
 import com.santos.linkshortener.dto.LinkCreateRequest;
+import com.santos.linkshortener.dto.LinkResponse;
 import com.santos.linkshortener.model.Link;
 import com.santos.linkshortener.model.User;
 import com.santos.linkshortener.repository.LinkRepository;
 import com.santos.linkshortener.repository.UserRepository;
 import com.santos.linkshortener.validation.Validar;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,27 +27,44 @@ public class LinkService {
     @Autowired
     private List<Validar<LinkCreateRequest>> validadores;
 
+    @Value("${app.base.url}")
+    private String baseUrl;
+
     /**
      * Cria um link curto associado a um usuário autenticado.
      *
      * @param request  Dados do link a ser criado
      * @param username Username do usuário autenticado
+     * @return
      */
-    public void createShortLink(LinkCreateRequest request, String username) {
+    public LinkResponse createShortLink(LinkCreateRequest request, String username) {
         validadores.forEach(validador -> validador.validar(request));
-        
+
         // Buscar o usuário pelo username
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + username));
-        
+
         String urlCurta = request.urlCurta();
+
+        // Se veio vazia → gerar automaticamente e garantir unicidade
         if (urlCurta == null || urlCurta.isBlank()) {
-            urlCurta = LinkGeneratorUtil.gerarLinkAleatorio();
+
+            do {
+                urlCurta = LinkGeneratorUtil.gerarLinkAleatorio();
+            } while (linkRepository.existsByUrlCurta(urlCurta)); // Garantir unicidade
+
+        } else {
+            // Se o usuário informou manualmente um código curto → validar unicidade
+            if (linkRepository.existsByUrlCurta(urlCurta)) {
+                throw new RuntimeException("Código curto já está em uso. Escolha outro.");
+            }
         }
-        
+
         Link link = new Link(request.urlOriginal(), urlCurta);
-        link.setUser(user); // Vincula o link ao usuário
+        link.setUser(user);
         linkRepository.save(link);
+
+        return LinkResponse.from(link, baseUrl);
     }
 
     public String getOriginalUrl(String urlCurta) {
@@ -57,15 +76,17 @@ public class LinkService {
             return link.getUrlOriginal();
         } else {
             throw new RuntimeException("Link não encontrado");
+
         }
     }
-    
+
     /**
      * Deleta um link específico associado a um usuário autenticado.
+     * 
      * @param id       ID do link a ser deletado
      * @param username Username do usuário autenticado
      */
-        public void deleteLink(Long id, String username) {
+    public void deleteLink(Long id, String username) {
         Link link = linkRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Link não encontrado com id: " + id));
         if (!link.getUser().getUsername().equals(username)) {
@@ -80,10 +101,13 @@ public class LinkService {
      * @param username Username do usuário
      * @return Lista de links do usuário
      */
-    public List<Link> getLinksByUsername(String username) {
+    public List<LinkResponse> getLinksByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado: " + username));
-        return linkRepository.findByUser(user);
+        return linkRepository.findByUser(user)
+                .stream()
+                .map(link -> LinkResponse.from(link, baseUrl))
+                .toList();
     }
 
 }

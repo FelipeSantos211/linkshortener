@@ -26,4 +26,11 @@ public interface LinkRepository extends JpaRepository<Link, Long> {
      * @return Lista de links do usuário
      */
     List<Link> findByUser(User user);
+    /**
+     * Verifica se um código curto já está em uso.
+     * 
+     * @param urlCurta Código curto a ser verificado
+     * @return true se o código curto existe, false caso contrário
+     */
+    boolean existsByUrlCurta(String urlCurta);
 }
