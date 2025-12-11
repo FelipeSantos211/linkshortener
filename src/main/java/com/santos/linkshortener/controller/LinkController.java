@@ -28,11 +28,11 @@ public class LinkController {
 
     @PostMapping("/links")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createShortLink(
+    public LinkResponse createShortLink(
             @RequestBody LinkCreateRequest request,
             @RequestHeader("Authorization") String authHeader) {
         String username = extractUsernameFromToken(authHeader);
-        linkService.createShortLink(request, username);
+        return linkService.createShortLink(request, username);
     }
 
     @GetMapping("/{shortUrl}")
@@ -44,9 +44,7 @@ public class LinkController {
     @GetMapping("/my-links")
     public List<LinkResponse> getMyLinks(@RequestHeader("Authorization") String authHeader) {
         String username = extractUsernameFromToken(authHeader);
-        return linkService.getLinksByUsername(username).stream()
-                .map(link -> LinkResponse.from(link, baseUrl))
-                .toList();
+        return linkService.getLinksByUsername(username);
     }
 
     @DeleteMapping("/links/{id}")
